@@ -1,4 +1,8 @@
-def predict_resale_price(features: dict) -> float:
+def predict_resale_price(features: dict) -> float: #Function to simulate HDB resale price prediction based on provided features
+    # Collects the features dictionary and returns a price prediction as a float
+    
+
+  #To insert in ml_stub.py real ML model later , replace this stub function, return a variable price instead of fixed. 
     """
     Fake ML model for now.
 
@@ -12,5 +16,5 @@ def predict_resale_price(features: dict) -> float:
     }
     """
     print("[DEBUG] ML stub received features:", features)
-    # Just return a fixed number so we know it's working
+    # Just return a fixed number so we know it's working 
     return 500000.0

@@ -1,15 +1,15 @@
 import os
 
 import pandas as pd
-import streamlit as st
+import streamlit as st #streamlit for web app framework
 from openai import OpenAI
 
-from ml_stub import predict_resale_price  # later swap this to your real ML pipeline
+from ml_stub import predict_resale_price  # later swap this to the real ML pipeline
 
 
-# ---------- LOAD API KEY (NO python-dotenv) ----------
+# ---------- LOAD API KEY  ----------
 
-def load_api_key() -> str:
+def load_api_key() -> str: #Function to load the OpenAI API Key, returns it as a string
     """
     Load OPENAI_API_KEY from environment variable or from a .env file manually.
     """
@@ -26,7 +26,7 @@ def load_api_key() -> str:
                 if not line or line.startswith("#"):
                     continue
                 if line.startswith("OPENAI_API_KEY="):
-                    return line.split("=", 1)[1].strip()
+                    return line.split("=", 1)[1].strip() 
     except FileNotFoundError:
         pass
 
@@ -37,36 +37,36 @@ def load_api_key() -> str:
     )
 
 
-api_key = load_api_key()
-client = OpenAI(api_key=api_key)
-OPENAI_MODEL = "gpt-4.1-mini"  # cheaper model for demo
+api_key = load_api_key() #Load the OpenAI API key using the defined function
+client = OpenAI(api_key=api_key) #Initialize the OpenAI client with the loaded API key (in string format)
+OPENAI_MODEL = "gpt-4.1-mini"  # chosen model for chat completions, balancing performance and cost ('gpt-4.1-mini')
 
 
-# ---------- OPENAI CHAT HELPER ----------
+# ---------- OPENAI CHAT HELPER FUNCTION ----------
 
-def ask_openai(messages):
+def ask_openai(messages): #Function to send a list of messages to OpenAI and receive a response
     """
     messages is a list of dicts: [{"role": "...", "content": "..."}]
     Returns assistant reply text.
     """
-    response = client.chat.completions.create(
-        model=OPENAI_MODEL,
-        messages=messages,
-        temperature=0.4,
+    response = client.chat.completions.create( 
+        model=OPENAI_MODEL, #Model to be used for generating chat completions
+        messages=messages, #List of message dicts representing the conversation history
+        temperature=0.4, #Controls randomness in the output; lower values make output more focused and deterministic, higher values increase randomness
     )
-    return response.choices[0].message.content
+    return response.choices[0].message.content #Return the content of the assistant's reply from the first choice
 
 
 # ---------- STREAMLIT PAGE SETUP ----------
 
-st.set_page_config(
+st.set_page_config( 
     page_title="HDB Resale Chatbot",
-    page_icon="🏠",
-    layout="wide",
+    page_icon="🏠", 
+    layout="wide", #Use wide layout for better use of horizontal space
 )
 
-st.title("🏠 HDB Resale Chatbot & Valuation Demo")
-st.caption("OpenAI-powered chatbot + ML pipeline hook for HDB resale valuations.")
+st.title("🏠 HDB Resale Chatbot & Valuation")
+st.caption("Powered by OpenAI's GPT 4.1 Mini + DAA Group 5's Prediction Model")
 
 
 # =====================================================================
@@ -75,12 +75,12 @@ st.caption("OpenAI-powered chatbot + ML pipeline hook for HDB resale valuations.
 
 st.header("💬 Chat about HDB Resale")
 
-col_chat, col_val = st.columns([2, 1])  # chat wider, forms narrower
+col_chat, col_val = st.columns([1, 1])  #Create two columns: chat area (1/3 width) and valuation form (2/3 width)
 
-with col_chat:
+with col_chat: #Chat column 
     # Initialise chat history
-    if "chat_history" not in st.session_state:
-        st.session_state.chat_history = [
+    if "chat_history" not in st.session_state: #Check if chat history is already in session state
+        st.session_state.chat_history = [ 
             {
                 "role": "system",
                 "content": (
@@ -93,30 +93,30 @@ with col_chat:
         ]
 
     # Display previous messages (skip the system one)
-    for msg in st.session_state.chat_history[1:]:
-        with st.chat_message("user" if msg["role"] == "user" else "assistant"):
-            st.markdown(msg["content"])
+    for msg in st.session_state.chat_history[1:]: #Iterate through chat history, skipping the initial system message 
+        with st.chat_message("user" if msg["role"] == "user" else "assistant"): #Display message as user or assistant based on role
+            st.markdown(msg["content"]) #Render the message content in markdown format
 
     # Input box at the bottom
-    user_prompt = st.chat_input("Ask a question about HDB resale...")
+    user_prompt = st.chat_input("Ask a question about HDB resale...") #Create a chat input box for user questions
 
-    if user_prompt:
-        # Show user message
-        st.session_state.chat_history.append(
+    if user_prompt: #When the user submits a prompt
+        #Show user message
+        st.session_state.chat_history.append( 
             {"role": "user", "content": user_prompt}
-        )
+        ) #Append the user's message to the chat history
         with st.chat_message("user"):
-            st.markdown(user_prompt)
+            st.markdown(user_prompt) #Render the user's message in markdown format
 
         # Ask OpenAI
-        reply = ask_openai(st.session_state.chat_history)
+        reply = ask_openai(st.session_state.chat_history) #Call the ask_openai function with the current chat history to get the assistant's reply
 
-        # Show assistant reply
+        #Show assistant reply
         st.session_state.chat_history.append(
             {"role": "assistant", "content": reply}
-        )
+        ) #Append the assistant's reply to the chat history
         with st.chat_message("assistant"):
-            st.markdown(reply)
+            st.markdown(reply) #Render the assistant's reply in markdown format
 
 
 # =====================================================================
@@ -124,30 +124,30 @@ with col_chat:
 # =====================================================================
 
 with col_val:
-    st.subheader("📈 Single HDB Price Estimate")
+    st.subheader("📈 HDB Resale Price Estimate")
 
     st.write(
-        "This section calls your ML pipeline (currently a stub returning a fixed "
-        "value). Later, your data science team will plug in the real model."
+        "This section calls the ML pipeline (currently a stub returning a fixed "
+        "value). To plug in ML Model later on."
     )
 
-    with st.form("valuation_form"):
-        town = st.text_input("Town", value="ANG MO KIO")
-        flat_type = st.selectbox(
-            "Flat type",
-            options=["3 ROOM", "4 ROOM", "5 ROOM", "EXECUTIVE", "OTHER"],
-            index=2,
+    with st.form("valuation_form"): #Create a form for HDB resale price estimation
+        town = st.text_input("Town", value="ANG MO KIO") #Text input for town with default value
+        flat_type = st.selectbox( #Dropdown select box for flat type
+            "Flat Type",
+            options=["1 ROOM", "2 ROOM", "3 ROOM", "4 ROOM", "5 ROOM", "EXECUTIVE", "OTHER"],
+            index=3, #Default selection index 
         )
-        floor_area = st.number_input(
-            "Floor area (sqm)",
-            min_value=10.0,
-            max_value=300.0,
-            value=100.0,
+        floor_area = st.number_input( #Number input for floor area in square meters
+            "Floor Area (sqm)",
+            min_value=30.0,
+            max_value=400.0,
+            value=89.0,
             step=1.0,
         )
-        storey_range = st.text_input("Storey range", value="10 TO 12")
-        remaining_lease_years = st.number_input(
-            "Remaining lease (years, approx)",
+        storey_range = st.text_input("Storey Range (Format Example: 01 TO 03)", value="10 TO 12") #Text input for storey range with default value
+        remaining_lease_years = st.number_input( #Number input for remaining lease years
+            "Remaining Lease (approx. Years)",
             min_value=0.0,
             max_value=99.0,
             value=60.0,
@@ -156,29 +156,29 @@ with col_val:
 
         submitted = st.form_submit_button("Estimate Price")
 
-    if submitted:
+    if submitted: #When the form is submitted
         features = {
-            "town": town.strip(),
+            "town": town.strip().upper(), 
             "flat_type": flat_type.strip(),
             "floor_area_sqm": float(floor_area),
-            "storey_range": storey_range.strip(),
+            "storey_range": storey_range.strip().upper(),
             "remaining_lease_years": float(remaining_lease_years),
         }
 
-        st.write("#### Features sent to ML model (debug)")
-        st.json(features)
+        st.write("#### Features sent to ML model (debug)") #Debug section to display features sent to the ML model
+        st.json(features) #Display the features in JSON format for debugging
 
-        estimated_price = predict_resale_price(features)
+        estimated_price = predict_resale_price(features) #Call the predict_resale_price function with the collected features to get the estimated price
 
         st.success(
-            f"**Estimated resale price:** ${estimated_price:,.0f}\n\n"
+            f"**Estimated resale price:** ${estimated_price:,.0f}\n\n"  
             "_Note: This is a model estimate, not an official valuation. "
-            "Actual prices depend on flat condition, facing, proximity to amenities, "
+            "Actual prices may vary, depending on flat condition, facing, proximity to amenities, "
             "and market sentiment._"
         )
 
 
-st.markdown("---")
+st.markdown("---")  #Horizontal rule to separate sections
 
 
 # =====================================================================
@@ -194,7 +194,7 @@ st.write(
 )
 
 uploaded_file = st.file_uploader(
-    "Upload CSV file", type=["csv"], accept_multiple_files=False
+    "Upload CSV file", type=["csv"], accept_multiple_files=False 
 )
 
 required_cols = [
@@ -205,53 +205,53 @@ required_cols = [
     "remaining_lease_years",
 ]
 
-if uploaded_file is not None:
+if uploaded_file is not None: #When a CSV file is uploaded
     try:
-        df = pd.read_csv(uploaded_file)
-    except Exception as e:
+        df = pd.read_csv(uploaded_file) #Read the uploaded CSV file into a pandas DataFrame
+    except Exception as e: #Handle exceptions that may occur while reading the CSV file
         st.error(f"Error reading CSV: {e}")
-        df = None
+        df = None #Set df to None if there was an error
 
-    if df is not None:
-        st.write("### Preview of uploaded data")
-        st.dataframe(df.head())
+    if df is not None: #If the DataFrame was successfully created
+        st.write("### Preview of uploaded data") #Section to preview the uploaded data
+        st.dataframe(df.head()) #Display the first few rows of the DataFrame
 
         # Check required columns
-        missing = [c for c in required_cols if c not in df.columns]
+        missing = [c for c in required_cols if c not in df.columns] #List comprehension to find any missing required columns in the DataFrame
         if missing:
             st.error(
                 "The following required columns are missing from your CSV: "
-                + ", ".join(missing)
+                + ", ".join(missing) #Join the list of missing columns into a comma-separated string 
             )
         else:
-            if st.button("Run Batch Predictions"):
-                # Apply model row by row
+            if st.button("Run Batch Predictions"): #Button to trigger batch predictions
+                #Apply model row by row
                 def predict_row(row):
                     features = {
-                        "town": row["town"],
+                        "town": row["town"], 
                         "flat_type": row["flat_type"],
                         "floor_area_sqm": float(row["floor_area_sqm"]),
                         "storey_range": row["storey_range"],
                         "remaining_lease_years": float(
-                            row["remaining_lease_years"]
+                            row["remaining_lease_years"] 
                         ),
                     }
-                    return predict_resale_price(features)
+                    return predict_resale_price(features) #Call the predict_resale_price function with the features extracted from the row
 
-                with st.spinner("Running predictions..."):
-                    df["predicted_resale_price"] = df.apply(predict_row, axis=1)
+                with st.spinner("Running predictions..."): #Display a spinner while predictions are being run
+                    df["predicted_resale_price"] = df.apply(predict_row, axis=1) #Apply the predict_row function to each row of the DataFrame and store the results in a new column
 
-                st.success("Batch predictions completed.")
-                st.write("### Results")
-                st.dataframe(df)
+                st.success("Batch predictions completed.") #Display a success message when predictions are complete
+                st.write("### Results") #Section to display the results
+                st.dataframe(df) #Display the DataFrame with the predicted prices
 
                 # Allow download
-                csv_out = df.to_csv(index=False).encode("utf-8")
+                csv_out = df.to_csv(index=False).encode("utf-8") #Convert the DataFrame to a CSV string without indexing, and encode it as UTF-8, standard [for CSV files]
                 st.download_button(
-                    label="Download results as CSV",
-                    data=csv_out,
-                    file_name="hdb_batch_predictions.csv",
-                    mime="text/csv",
+                    label="Download results as CSV", #Button label for downloading the results as a CSV file
+                    data=csv_out, #Data to be downloaded (the CSV string)
+                    file_name="hdb_batch_predictions.csv", #Default filename for the downloaded CSV file
+                    mime="text/csv", #selects the MIME type for the downloaded file
                 )
 else:
-    st.info("Upload a CSV file to run batch predictions.")
+    st.info("Upload a CSV file to run batch predictions.") #Informational message prompting the user to upload a CSV file for batch predictions

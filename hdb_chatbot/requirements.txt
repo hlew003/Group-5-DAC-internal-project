@@ -2,3 +2,4 @@ openai
 pandas
 joblib
 streamlit
+# Dependencies for HDB Chatbot application integrating OpenAI and ML model for HDB resale price prediction, to install in .venv environment.
