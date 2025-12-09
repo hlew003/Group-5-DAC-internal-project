@@ -3,7 +3,52 @@ import pandas as pd
 import streamlit as st #streamlit for web app framework
 from openai import OpenAI
 
-from ml_stub import predict_resale_price  # later swap this to the real ML pipeline
+# Load the ML model prediction function
+import re
+import joblib
+from datetime import datetime
+from pathlib import Path
+
+# Resolve paths relative to this file so it works no matter where Streamlit is launched
+BASE_DIR = Path(__file__).resolve().parent
+DIST_LOOKUP_PATH = BASE_DIR / "geocode" / "distance_lookup.parquet"
+MODEL_PATH = BASE_DIR / "geocode" / "rf_hdb_pipeline.pkl"
+
+dist_lookup = pd.read_parquet(DIST_LOOKUP_PATH)
+rf_pipeline = joblib.load(MODEL_PATH)
+
+def parse_storey_range(storey_range_str):
+    if pd.isna(storey_range_str):
+        return np.nan
+    s = str(storey_range_str).upper()
+    nums = re.findall(r"\d+", s)
+    if len(nums) >= 2:
+        return (int(nums[0]) + int(nums[1])) / 2
+    if len(nums) == 1:
+        return float(nums[0])
+    raise ValueError("storey_range must include at least one number, e.g. '01 TO 05'")
+
+def build_feature_df(town, flat_type, storey_range, floor_area_sqm, remaining_lease_years, trans_year=None):
+    base = pd.DataFrame([{
+        "town": town,
+        "flat_type": flat_type,
+        "floor_area_sqm": floor_area_sqm,
+        "remaining_lease_years": remaining_lease_years,
+        "storey_avg": parse_storey_range(storey_range),
+        "trans_year": trans_year or datetime.now().year,
+    }])
+    return base.merge(dist_lookup, on="town", how="left")
+
+def predict_resale_price(inputs: dict) -> float:
+    feat = build_feature_df(
+        town=inputs["town"],
+        flat_type=inputs["flat_type"],
+        storey_range=inputs["storey_range"],
+        floor_area_sqm=inputs["floor_area_sqm"],
+        remaining_lease_years=inputs["remaining_lease_years"],
+        trans_year=inputs.get("trans_year"),
+    )
+    return float(rf_pipeline.predict(feat)[0])
 
 
 # ---------- LOAD API KEY  ----------
